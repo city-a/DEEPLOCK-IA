@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Sofía - Chatbot Deeplock IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        /* Contenedor principal del chat */
+        .chat {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 28px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        /* Cabecera con selector local/online */
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .bot-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 12px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 40px;
+        }
+        .mode-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #334155;
+        }
+        .mode-btn.local.active {
+            background: #22c55e;
+            color: white;
+            box-shadow: 0 2px 6px rgba(34,197,94,0.3);
+        }
+        .mode-btn.online.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+        }
+        .settings-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #1e293b;
+            transition: transform 0.2s;
+            padding: 4px 8px;
+            border-radius: 30px;
+        }
+        .settings-btn:hover {
+            background: #f1f5f9;
+            transform: rotate(10deg);
+        }
+
+        /* Área de mensajes */
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f8fafc;
+            position: relative;
+        }
+
+        .company-splash {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #cbd5e1;
+            text-align: center;
+            letter-spacing: 4px;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 0;
+            font-family: monospace;
+        }
+        .chat-box:not(:empty) .company-splash {
+            display: none;
+        }
+
+        /* Mensajes */
+        .msg {
+            max-width: 85%;
+            padding: 10px 16px;
+            border-radius: 20px;
+            line-height: 1.45;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            animation: fadeIn 0.2s ease;
+            z-index: 1;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .user-msg {
+            background: #2563eb;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-msg {
+            background: #e2e8f0;
+            color: #0f172a;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .thinking {
+            background: #cbd5e1;
+            color: #334155;
+            font-style: normal;
+            font-weight: normal;
+            align-self: flex-start;
+        }
+
+        .pay-button {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            margin-top: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            text-align: center;
+        }
+        .pay-button:hover {
+            background: #1d4ed8;
+        }
+
+        /* Sugerencias (botones de preguntas) */
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        .suggestion-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #0f172a;
+        }
+        .suggestion-btn:hover {
+            background: #e2e8f0;
+            transform: scale(1.02);
+        }
+
+        /* Input */
+        .input-area {
+            padding: 12px 20px 16px 20px;
+            background: white;
+        }
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            background: #f1f5f9;
+            border-radius: 48px;
+            padding: 4px 4px 4px 18px;
+            border: 1px solid #cbd5e1;
+            transition: 0.2s;
+        }
+        .input-wrapper:focus-within {
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+        }
+        .input-wrapper input {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            outline: none;
+        }
+        .input-wrapper button {
+            background: #2563eb;
+            border: none;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .input-wrapper button:hover {
+            background: #1d4ed8;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 5px;
+            background: #02061780;
+            color: white;
+            backdrop-filter: blur(4px);
+            font-family: monospace;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            background: white;
+            color: #0f172a;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            border-radius: 32px;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-left: 4px solid #2563eb;
+            padding-left: 12px;
+        }
+        .modal-content label {
+            display: block;
+            margin: 20px 0 6px 0;
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #475569;
+        }
+        .modal-content input, .modal-content textarea, .modal-content select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            font-family: inherit;
+        }
+        .faq-entry {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 24px;
+            margin-bottom: 16px;
+        }
+        .btn-save {
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            padding: 14px;
+            width: 100%;
+            margin-top: 30px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .close-modal {
+            float: right;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 26px;
+            cursor: pointer;
+        }
+        hr { margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="chat">
+    <div class="chat-header">
+        <span class="bot-name" id="botNameDisplay">Sofía</span>
+        <div class="mode-selector" id="modeSelector">
+            <button class="mode-btn local" data-mode="local_only">Local</button>
+            <button class="mode-btn online" data-mode="hybrid">Online</button>
+        </div>
+        <button class="settings-btn" id="openSettingsBtn">⚙️</button>
+    </div>
+    <div class="chat-box" id="chat">
+        <div class="company-splash">DEEPLOCK-IA</div>
+    </div>
+    <div class="suggestions" id="suggestionsBar">
+        <!-- Botones generados dinámicamente -->
+    </div>
+    <div class="input-area">
+        <div class="input-wrapper">
+            <input type="text" id="msg" placeholder="Escribe tu pregunta..." autocomplete="off">
+            <button id="sendBtn">Enviar</button>
+        </div>
+    </div>
+</div>
+<div class="status" id="statusMsg">Bot local mejorado + modo seleccionable</div>
+
+<!-- Modal de configuración -->
+<div id="adminModal" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" id="closeModalBtn">&times;</button>
+        <h3>Configuración</h3>
+        <label>Nombre del bot</label>
+        <input type="text" id="botNameInput">
+        <label>Nombre empresa</label>
+        <input type="text" id="companyNameInput">
+        <label>Tono</label>
+        <select id="toneSelect">
+            <option value="formal">Formal</option>
+            <option value="amigable">Amigable</option>
+            <option value="divertido">Divertido</option>
+        </select>
+        <label>Mensaje contacto (fallback)</label>
+        <textarea id="contactInfoInput" rows="2"></textarea>
+        <div id="faqList"></div>
+        <button id="addFaqBtn" style="background:#e2e8f0; border:none; padding:8px 16px; border-radius:40px; margin:10px 0;">+ Agregar FAQ</button>
+        <button class="btn-save" id="saveConfigBtn">GUARDAR</button>
+    </div>
+</div>
+
+<script>
+    // ========== 1. DATOS DE EMPRESA Y CONOCIMIENTO LOCAL ==========
+    const WEB_DATA = {
+        empresa: "Deeplock-IA desarrolla chatbots para empresas, tiendas online y profesionales. Automatización inteligente 24/7.",
+        mision: "Ayudar a empresas a crecer mediante automatización, reduciendo costos y mejorando la atención.",
+        vision: "Plataforma líder de automatización en Latinoamérica.",
+        objetivos: ["Optimizar procesos", "Aumentar ventas con IA", "Reducir tiempos respuesta", "Mejorar experiencia cliente"],
+        beneficios: ["Respuestas 24/7", "Aumento conversión", "Reducción costos", "Procesos automatizados", "Experiencia mejorada"],
+        planes: [
+            { nombre: "PLAY", precio: "$49.000", caracteristicas: "200 mensajes, chat web, respuestas automáticas.", ideal: "Negocios pequeños" },
+            { nombre: "ESTÁNDAR", precio: "$149.000", caracteristicas: "2.000 mensajes, IA inteligente, Web + WhatsApp, captura leads.", ideal: "Empresas en crecimiento" },
+            { nombre: "PREMIUM", precio: "$299.000", caracteristicas: "Mensajes ilimitados, IA personalizada, integraciones, analíticas.", ideal: "Grandes empresas" }
+        ],
+        urlPagoBase: "https://deeplock.com/pagar"
+    };
+
+    // Configuración por defecto (modo manual: local o hybrid, por defecto local)
+    let config = {
+        botName: "Sofía",
+        companyName: "Deeplock-IA",
+        tone: "amigable",
+        systemPrompt: "Eres una asistente experta en chatbots. Responde breve, claro y amable.",
+        contactInfo: "Email: hola@deeplock.com | Tel: +34 900 123 456",
+        responseMode: "local_only",   // 'local_only' o 'hybrid' (lo cambiaremos con los botones)
+        faq: [
+            { pregunta: "Planes disponibles", respuesta: "PLAY ($49.000), ESTÁNDAR ($149.000) y PREMIUM ($299.000). ¿Quieres que te ayude a elegir?" },
+            { pregunta: "Beneficios", respuesta: "Respuestas 24/7, aumento de conversión, reducción de costos, y atención automatizada." },
+            { pregunta: "Cómo comprar", respuesta: "Escribe 'quiero comprar' y te guiaré para elegir el mejor plan." }
+        ],
+        purchaseSession: null
+    };
+
+    // Cargar desde localStorage
+    const stored = localStorage.getItem("chatbotConfig");
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            config = { ...config, ...parsed };
+        } catch(e) {}
+    }
+    function saveConfigToLocal() {
+        const toStore = { ...config };
+        delete toStore.purchaseSession;
+        localStorage.setItem("chatbotConfig", JSON.stringify(toStore));
+    }
+
+    // ========== 2. FUNCIONES DE CONOCIMIENTO LOCAL ==========
+    function buscarEnWeb(pregunta) {
+        const q = pregunta.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (q.includes("plan") || q.includes("precio") || q.includes("costo") || q.includes("cuánto")) {
+            let resp = `Planes ${config.companyName}:\n`;
+            WEB_DATA.planes.forEach(p => { resp += `• ${p.nombre}: ${p.precio} - ${p.caracteristicas}\n`; });
+            resp += "\n¿Te ayudo a elegir? Escribe 'quiero comprar'.";
+            return resp;
+        }
+        if (q.includes("mision")) return `Misión: ${WEB_DATA.mision}`;
+        if (q.includes("vision")) return `Visión: ${WEB_DATA.vision}`;
+        if (q.includes("objetivo")) return `Objetivos: ${WEB_DATA.objetivos.join(", ")}.`;
+        if (q.includes("beneficio")) return `Beneficios:\n${WEB_DATA.beneficios.map(b => `✓ ${b}`).join("\n")}`;
+        if (q.includes("quienes")) return WEB_DATA.empresa;
+        if (q.includes("play")) return `Plan PLAY: ${WEB_DATA.planes[0].precio} - ${WEB_DATA.planes[0].caracteristicas}`;
+        if (q.includes("estándar")) return `Plan ESTÁNDAR: ${WEB_DATA.planes[1].precio} - ${WEB_DATA.planes[1].caracteristicas}`;
+        if (q.includes("premium")) return `Plan PREMIUM: ${WEB_DATA.planes[2].precio} - ${WEB_DATA.planes[2].caracteristicas}`;
+        return null;
+    }
+    function buscarEnFAQ(pregunta) {
+        const q = pregunta.toLowerCase();
+        for (let item of config.faq) {
+            if (q.includes(item.pregunta.toLowerCase())) return item.respuesta;
+        }
+        return null;
+    }
+
+    // ========== 3. FLUJO COMPRA (local) ==========
+    function esIntencionCompra(mensaje) {
+        const txt = mensaje.toLowerCase();
+        return ["comprar", "adquirir", "quiero un plan", "necesito chatbot", "presupuesto", "contratar"].some(k => txt.includes(k));
+    }
+    function iniciarFlujoCompra() {
+        config.purchaseSession = { paso: 1, respuestas: {} };
+        return "Excelente. ¿Cuál es tu tipo de negocio? (tienda online, restaurante, consultoría, freelance)";
+    }
+    async function procesarRespuestaCompra(mensaje) {
+        const ses = config.purchaseSession;
+        if (!ses) return null;
+        if (ses.paso === 1) {
+            ses.respuestas.tipo = mensaje;
+            ses.paso = 2;
+            return "¿Cuántos clientes o conversaciones al mes? (100, 500, 2000, +5000)";
+        }
+        if (ses.paso === 2) {
+            ses.respuestas.volumen = mensaje;
+            ses.paso = 3;
+            return "¿Funcionalidades? (respuestas automaticas, WhatsApp, IA avanzada, integraciones)";
+        }
+        if (ses.paso === 3) {
+            ses.respuestas.funciones = mensaje;
+            ses.paso = 4;
+            return "Presupuesto mensual? (menos 50k, 50-150k, más 150k)";
+        }
+        if (ses.paso === 4) {
+            ses.respuestas.presupuesto = mensaje;
+            let vol = parseInt(ses.respuestas.volumen) || 0;
+            let plan = WEB_DATA.planes[0];
+            if (vol > 2000 || ses.respuestas.funciones.includes("ia avanzada")) plan = WEB_DATA.planes[2];
+            else if (vol > 500 || ses.respuestas.funciones.includes("whatsapp")) plan = WEB_DATA.planes[1];
+            const url = `${WEB_DATA.urlPagoBase}?plan=${plan.nombre.toLowerCase()}&negocio=${encodeURIComponent(ses.respuestas.tipo)}`;
+            const html = `<strong>Recomendación:</strong> ${plan.nombre} (${plan.precio})<br>${plan.caracteristicas}<br><br><a href="${url}" target="_blank" class="pay-button">PAGAR AHORA</a><br>¿Más ayuda?`;
+            config.purchaseSession = null;
+            return { html, isHtml: true };
+        }
+        return null;
+    }
+
+    // ========== 4. IA EXTERNA solo si modo hybrid ==========
+    async function consultarIA(pregunta) {
+        if (config.responseMode !== "hybrid") return null;
+        try {
+            const url = `https://text.pollinations.ai/prompt/${encodeURIComponent(`${config.systemPrompt} Responde breve, max 3 líneas. Pregunta: ${pregunta}`)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error();
+            let txt = await res.text();
+            return txt.substring(0, 400);
+        } catch(e) { return null; }
+    }
+
+    // ========== 5. RESPUESTA PRINCIPAL ==========
+    async function obtenerRespuesta(mensaje) {
+        if (config.purchaseSession) {
+            const r = await procesarRespuestaCompra(mensaje);
+            if (r) return r;
+        }
+        if (esIntencionCompra(mensaje) && !config.purchaseSession) 
+            return { text: iniciarFlujoCompra(), isHtml: false };
+        let resp = buscarEnWeb(mensaje);
+        if (resp) return { text: resp, isHtml: false };
+        resp = buscarEnFAQ(mensaje);
+        if (resp) return { text: resp, isHtml: false };
+        if (config.responseMode === "hybrid") {
+            const ia = await consultarIA(mensaje);
+            if (ia) return { text: ia, isHtml: false };
+        }
+        return { text: `No tengo respuesta exacta. Pregunta sobre planes, precios o beneficios. ${config.contactInfo}`, isHtml: false };
+    }
+
+    // ========== 6. UI DEL CHAT con sugerencias ==========
+    let chatBox, splash, inputField, sendBtn, statusDiv;
+    let isGenerating = false;
+
+    // Lista de preguntas destacadas para botones
+    const SUGGESTIONS = [
+        "Planes disponibles",
+        "Beneficios de Deeplock",
+        "¿Cómo comprar?",
+        "¿Qué incluye el plan Estándar?"
+    ];
+
+    function buildSuggestions() {
+        const bar = document.getElementById("suggestionsBar");
+        bar.innerHTML = "";
+        SUGGESTIONS.forEach(text => {
+            const btn = document.createElement("button");
+            btn.className = "suggestion-btn";
+            btn.innerText = text;
+            btn.onclick = () => {
+                inputField.value = text;
+                enviar();
+            };
+            bar.appendChild(btn);
+        });
+    }
+
+    function updateModeUI() {
+        const localBtn = document.querySelector(".mode-btn.local");
+        const onlineBtn = document.querySelector(".mode-btn.online");
+        if (config.responseMode === "local_only") {
+            localBtn.classList.add("active");
+            onlineBtn.classList.remove("active");
+            statusDiv.innerText = "🔒 Modo LOCAL activo - respuestas siempre disponibles";
+        } else {
+            onlineBtn.classList.add("active");
+            localBtn.classList.remove("active");
+            statusDiv.innerText = "🌐 Modo ONLINE - IA externa cuando sea necesario";
+        }
+    }
+
+    function agregarMensaje(texto, tipo, isHtml = false) {
+        const div = document.createElement('div');
+        div.classList.add('msg', tipo);
+        if (isHtml) div.innerHTML = texto;
+        else div.innerText = texto;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        if (splash) splash.style.display = 'none';
+    }
+
+    function reemplazarUltimoMensaje(contenido, tipo, isHtml = false) {
+        const last = chatBox.lastChild;
+        if (last && last.classList.contains('thinking')) {
+            last.classList.remove('thinking');
+            last.classList.add(tipo);
+            if (isHtml) last.innerHTML = contenido;
+            else last.innerText = contenido;
+        } else {
+            agregarMensaje(contenido, tipo, isHtml);
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    window.enviar = async function() {
+        if (isGenerating) {
+            agregarMensaje("Espera, estoy respondiendo...", "bot-msg");
+            return;
+        }
+        const texto = inputField.value.trim();
+        if (!texto) return;
+        agregarMensaje(texto, "user-msg");
+        inputField.value = "";
+        inputField.disabled = true;
+        agregarMensaje("PENSANDO...", "thinking");
+        isGenerating = true;
+
+        let respuesta;
+        try {
+            respuesta = await obtenerRespuesta(texto);
+        } catch(e) {
+            respuesta = { text: "Error, intenta de nuevo.", isHtml: false };
+        }
+        if (respuesta.html) reemplazarUltimoMensaje(respuesta.html, "bot-msg", true);
+        else reemplazarUltimoMensaje(respuesta.text, "bot-msg", false);
+
+        isGenerating = false;
+        inputField.disabled = false;
+        inputField.focus();
+        updateModeUI();
+    };
+
+    // ========== 7. CONFIGURACIÓN Y MODAL ==========
+    function renderFaqList() {
+        const container = document.getElementById("faqList");
+        container.innerHTML = "";
+        config.faq.forEach((item, idx) => {
+            const div = document.createElement("div");
+            div.className = "faq-entry";
+            div.innerHTML = `
+                <strong>Pregunta</strong><br><input type="text" class="faq-question" value="${escapeHtml(item.pregunta)}" data-idx="${idx}"><br>
+                <strong>Respuesta</strong><br><textarea class="faq-answer" data-idx="${idx}" rows="2">${escapeHtml(item.respuesta)}</textarea><br>
+                <button class="remove-faq" data-idx="${idx}" style="background:#ef4444; color:white; border:none; border-radius:30px; padding:4px 12px;">Eliminar</button>
+            `;
+            container.appendChild(div);
+        });
+        document.querySelectorAll('.faq-question').forEach(inp => inp.addEventListener('change', (e) => {
+            config.faq[e.target.dataset.idx].pregunta = e.target.value;
+        }));
+        document.querySelectorAll('.faq-answer').forEach(ta => ta.addEventListener('change', (e) => {
+            config.faq[e.target.dataset.idx].respuesta = e.target.value;
+        }));
+        document.querySelectorAll('.remove-faq').forEach(btn => btn.addEventListener('click', (e) => {
+            config.faq.splice(e.target.dataset.idx, 1);
+            renderFaqList();
+        }));
+    }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[m])); }
+    function applyConfigToUI() {
+        document.getElementById("botNameInput").value = config.botName;
+        document.getElementById("companyNameInput").value = config.companyName;
+        document.getElementById("toneSelect").value = config.tone;
+        document.getElementById("contactInfoInput").value = config.contactInfo;
+        renderFaqList();
+        document.getElementById("botNameDisplay").innerText = config.botName;
+    }
+    function saveConfig() {
+        config.botName = document.getElementById("botNameInput").value;
+        config.companyName = document.getElementById("companyNameInput").value;
+        config.tone = document.getElementById("toneSelect").value;
+        config.contactInfo = document.getElementById("contactInfoInput").value;
+        saveConfigToLocal();
+        alert("Configuración guardada");
+        closeModal();
+        updateModeUI();
+        document.getElementById("botNameDisplay").innerText = config.botName;
+    }
+    function addFaq() { config.faq.push({ pregunta: "Nueva", respuesta: "Respuesta" }); renderFaqList(); }
+
+    const modal = document.getElementById("adminModal");
+    function openModal() { modal.style.display = "flex"; applyConfigToUI(); }
+    function closeModal() { modal.style.display = "none"; }
+    document.getElementById("openSettingsBtn").onclick = openModal;
+    document.getElementById("closeModalBtn").onclick = closeModal;
+    document.getElementById("saveConfigBtn").onclick = saveConfig;
+    document.getElementById("addFaqBtn").onclick = addFaq;
+
+    // Selector Local / Online
+    document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const mode = btn.getAttribute("data-mode");
+            config.responseMode = mode;
+            saveConfigToLocal();
+            updateModeUI();
+            // Limpiar sesión de compra
+            config.purchaseSession = null;
+        });
+    });
+
+    // Inicializar
+    document.addEventListener("DOMContentLoaded", () => {
+        chatBox = document.getElementById('chat');
+        splash = document.querySelector('.company-splash');
+        inputField = document.getElementById('msg');
+        sendBtn = document.getElementById('sendBtn');
+        statusDiv = document.getElementById('statusMsg');
+        sendBtn.onclick = enviar;
+        inputField.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !isGenerating) enviar(); });
+        buildSuggestions();
+        updateModeUI();
+        agregarMensaje(`Hola, soy ${config.botName} de ${config.companyName}. ¿En qué te ayudo? Puedes elegir modo Local o Online arriba.`, "bot-msg");
+    });
+</script>
+</body>
+</html>
